@@ -40,17 +40,17 @@ function clone(o) {
 }
 
 test("validate: project not defined", async (t) => {
-	const libraryFormatter = new LibraryFormatter();
+	const libraryFormatter = new LibraryFormatter({project: null});
 
 	// error is thrown because project is not defined (null)
-	const error = await t.throws(libraryFormatter.validate(null));
+	const error = await t.throws(libraryFormatter.validate());
 	t.deepEqual(error.message, "Project is undefined", "Correct exception thrown");
 });
 
 test("validate: empty version", async (t) => {
 	const myProject = clone(libraryETree);
 	myProject.version = undefined;
-	const libraryFormatter = new LibraryFormatter();
+	const libraryFormatter = new LibraryFormatter({project: myProject});
 
 	// error is thrown because project's version is not defined
 	const error = await t.throws(libraryFormatter.validate(myProject));
@@ -60,7 +60,7 @@ test("validate: empty version", async (t) => {
 test("validate: empty type", async (t) => {
 	const myProject = clone(libraryETree);
 	myProject.type = undefined;
-	const libraryFormatter = new LibraryFormatter();
+	const libraryFormatter = new LibraryFormatter({project: myProject});
 
 	// error is thrown because project's type is not defined
 	const error = await t.throws(libraryFormatter.validate(myProject));
@@ -71,7 +71,7 @@ test("validate: empty type", async (t) => {
 test("validate: empty metadata", async (t) => {
 	const myProject = clone(libraryETree);
 	myProject.metadata = undefined;
-	const libraryFormatter = new LibraryFormatter();
+	const libraryFormatter = new LibraryFormatter({project: myProject});
 
 	// error is thrown because project's metadata is not defined
 	const error = await t.throws(libraryFormatter.validate(myProject));
@@ -82,7 +82,7 @@ test("validate: empty metadata", async (t) => {
 test("validate: empty resources", async (t) => {
 	const myProject = clone(libraryETree);
 	myProject.resources = undefined;
-	const libraryFormatter = new LibraryFormatter();
+	const libraryFormatter = new LibraryFormatter({project: myProject});
 
 	await libraryFormatter.validate(myProject);
 	t.deepEqual(myProject.resources.configuration.paths.src, "src", "default src directory is set");
@@ -91,7 +91,7 @@ test("validate: empty resources", async (t) => {
 
 test("validate: src directory does not exist", async (t) => {
 	const myProject = clone(libraryETree);
-	const libraryFormatter = new LibraryFormatter();
+	const libraryFormatter = new LibraryFormatter({project: myProject});
 	const dirExists = sinon.stub(libraryFormatter, "dirExists");
 	dirExists.onFirstCall().resolves(false);
 	dirExists.onSecondCall().resolves(true);
@@ -103,7 +103,7 @@ test("validate: src directory does not exist", async (t) => {
 
 test("validate: test directory does not exist", async (t) => {
 	const myProject = clone(libraryETree);
-	const libraryFormatter = new LibraryFormatter();
+	const libraryFormatter = new LibraryFormatter({project: myProject});
 	const dirExists = sinon.stub(libraryFormatter, "dirExists");
 	dirExists.onFirstCall().resolves(true);
 	dirExists.onSecondCall().resolves(false);
@@ -115,10 +115,10 @@ test("validate: test directory does not exist", async (t) => {
 
 test("format: copyright already configured", async (t) => {
 	const myProject = clone(libraryETree);
-	const libraryFormatter = new LibraryFormatter();
+	const libraryFormatter = new LibraryFormatter({project: myProject});
 	sinon.stub(libraryFormatter, "validate").resolves();
 
-	await libraryFormatter.format(myProject);
+	await libraryFormatter.format();
 	t.deepEqual(myProject.metadata.copyright, libraryETree.metadata.copyright, "Copyright was not altered");
 });
 
@@ -147,11 +147,11 @@ test.serial("format: no dot library file", async (t) => {
 
 	const LibraryFormatter = mock.reRequire("../../../../lib/types/library/LibraryFormatter");
 
-	const libraryFormatter = new LibraryFormatter();
+	const libraryFormatter = new LibraryFormatter({project: myProject});
 	sinon.stub(libraryFormatter, "validate").resolves();
 
 
-	await libraryFormatter.format(myProject);
+	await libraryFormatter.format();
 	t.deepEqual(loggerSpy.callCount, 2, "2 calls to verbose should be done");
 	t.true(loggerSpy.getCalls().map((call) => call.args[0]).includes(
 		"Could not find .library file for project library.e"), "should contain message for .library");
@@ -173,31 +173,31 @@ test.serial("format: multiple dot library file", async (t) => {
 
 	const LibraryFormatter = mock.reRequire("../../../../lib/types/library/LibraryFormatter");
 
-	const libraryFormatter = new LibraryFormatter();
+	const libraryFormatter = new LibraryFormatter({project: myProject});
 	sinon.stub(libraryFormatter, "validate").resolves();
 
 
-	const error = await t.throws(libraryFormatter.format(myProject));
+	const error = await t.throws(libraryFormatter.format());
 	t.deepEqual(error.message, "Found multiple (2) .library files for project library.e",
 		"Error message for 2 .library files expectzed");
 	mock.stop("globby");
 });
 
-test("format: takes copyright from .library", async (t) => {
+test.only("format: takes copyright from .library", async (t) => {
 	const myProject = clone(libraryETree);
 	myProject.metadata.copyright = undefined; // Simulate unconfigured copyright
-	const libraryFormatter = new LibraryFormatter();
+	const libraryFormatter = new LibraryFormatter({project: myProject});
 	sinon.stub(libraryFormatter, "validate").resolves();
-	await libraryFormatter.format(myProject);
+	await libraryFormatter.format();
 	t.deepEqual(myProject.metadata.copyright, "${copyright}", "Correct copyright set");
 });
 
 test("format: configuration test path", async (t) => {
 	const myProject = clone(libraryETree);
-	const libraryFormatter = new LibraryFormatter();
+	const libraryFormatter = new LibraryFormatter({project: myProject});
 	sinon.stub(libraryFormatter, "validate").resolves();
 	myProject.resources.configuration.paths.test = null;
-	await libraryFormatter.format(myProject);
+	await libraryFormatter.format();
 
 	t.falsy(myProject.resources.pathMappings["/test-resources/"], "test-resources pathMapping is not set");
 });
